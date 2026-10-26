@@ -1766,7 +1766,15 @@ static ggml_backend_buffer_t ggml_backend_meta_buffer_type_alloc_buffer(ggml_bac
     bufs.reserve(n_simple_bufts);
     for (size_t i = 0; i < n_simple_bufts; i++) {
         bufs.push_back(ggml_backend_buft_alloc_buffer(ggml_backend_meta_buft_simple_buft(buft, i), size));
-        GGML_ASSERT(bufs.back() != nullptr);
+        if (bufs.back() == nullptr) {
+            // out of memory on one device: fail like a simple buffer type, the caller decides (a compute buffer
+            // that does not fit fails the context, not the process)
+            bufs.pop_back();
+            for (ggml_backend_buffer_t buf : bufs) {
+                ggml_backend_buffer_free(buf);
+            }
+            return nullptr;
+        }
         max_size = std::max(max_size, ggml_backend_buffer_get_size(bufs.back()));
     }
     ggml_backend_meta_buffer_context * buf_ctx = ggml_backend_meta_compute_buffer_context_new(bufs);

@@ -1095,6 +1095,10 @@ enum common_context_seq_rm_type {
 // note: clears the memory of the context
 common_context_seq_rm_type common_context_can_seq_rm(llama_context * ctx);
 
+// decode one full ubatch of dummy tokens, then clear the memory: the backends create part of their device state
+// (cuBLAS handles and workspaces, pool buffers) on the first large batch, which the 2-token warmup does not reach
+void common_context_warmup_ubatch(llama_context * ctx);
+
 struct common_memory {
     llama_context * ctx_tgt = nullptr;
     llama_context * ctx_dft = nullptr;

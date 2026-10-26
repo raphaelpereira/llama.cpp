@@ -3720,6 +3720,14 @@ private:
         }
 
         batch_bg.init(ctx_bg.get(), llama_n_ubatch(ctx_bg.get()), llama_model_n_embd_inp(model_tgt));
+
+        // each context creates its cuBLAS handles, workspaces and pool buffers on its first large batch: run one
+        // here, so a device without room for ctx_bg's fails at load and not under the first prompt that overlaps a
+        // generation (the target's are created here too, it may not have seen a large batch yet)
+        if (params_base.warmup) {
+            common_context_warmup_ubatch(ctx_tgt);
+            common_context_warmup_ubatch(ctx_bg.get());
+        }
         SRV_INF("%s", "concurrent prefill: a prompt is computed in a second context while other slots generate\n");
     }
 

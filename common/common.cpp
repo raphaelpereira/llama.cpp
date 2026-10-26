@@ -1583,6 +1583,19 @@ char * common_get_model_or_exit(int argc, char * argv[]) {
     return path;
 }
 
+void common_context_warmup_ubatch(llama_context * ctx) {
+    std::vector<llama_token> tmp(llama_n_ubatch(ctx), 0);
+    {
+        common_batch batch = common_batch_get_one(ctx, tmp);
+        std::vector<float> zeros;
+        common_batch_set_zero_state(batch, llama_get_model(ctx), zeros);
+        llama_process(ctx, LLAMA_PROCESS_TYPE_DECODE, batch.get());
+    }
+    llama_memory_clear(llama_get_memory(ctx), true);
+    llama_synchronize(ctx);
+    llama_perf_context_reset(ctx);
+}
+
 common_context_seq_rm_type common_context_can_seq_rm(llama_context * ctx) {
     auto * mem = llama_get_memory(ctx);
     if (mem == nullptr) {

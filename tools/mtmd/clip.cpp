@@ -3973,6 +3973,10 @@ struct clip_model_loader {
     static void warmup(clip_ctx & ctx_clip) {
         auto batch = get_dummy_batch(ctx_clip);
         warmup(ctx_clip, batch);
+        // the reserve does not run the graph: one encode creates the backend's cuBLAS handles, workspaces and pool
+        // buffers at load, not on the first image
+        std::vector<float> embd;
+        clip_image_batch_encode(&ctx_clip, 1, &batch, embd);
     }
 
     static void warmup(clip_ctx & ctx_clip, const clip_image_f32_batch & batch) {
